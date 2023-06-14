@@ -1,3 +1,3 @@
 ,1.0,0.5,0.3333333333333333,0.25,0.2,0.16666666666666666,0.14285714285714285,0.125,0.1111111111111111,0.1
-8,golomb-rice: 3,golomb-rice: 3,exponential-golomb: 1,exponential-golomb: 1,exponential-golomb: 1,exponential-golomb: 1,exponential-golomb: 1,exponential-golomb: 1,exponential-golomb: 1,exponential-golomb: 1
-16,golomb-rice: 3,exponential-golomb: 1,exponential-golomb: 1,exponential-golomb: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1
+8,golomb-rice: 3,golomb-rice: 3,exp-golomb: 1,exp-golomb: 1,exp-golomb: 1,exp-golomb: 1,exp-golomb: 1,exp-golomb: 1,exp-golomb: 1,exp-golomb: 1
+16,golomb-rice: 3,exp-golomb: 1,exp-golomb: 1,exp-golomb: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1,golomb-rice: 1

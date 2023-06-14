@@ -38,12 +38,7 @@ def idct_2d(coefficients):
     return np.apply_along_axis(idct_1d, axis=0, arr=idct_on_cols)
 
 
-def encode_dct_stage(blocks: np.ndarray):
-    """
-    Perform the dct stage of encoding.
-    :param blocks:
-    :return:
-    """
+def apply_dct_encoding(blocks: np.ndarray):
     original_shape = blocks.shape
     m, n, d, _ = original_shape
     blocks_vector = blocks.reshape((-1, d, d))
@@ -52,12 +47,7 @@ def encode_dct_stage(blocks: np.ndarray):
     return dct_blocks_image
 
 
-def decode_dct_stage(blocks: np.ndarray):
-    """
-    get a dct matrix and decode to image
-    :param blocks: blocks of dtc matrices
-    :return:
-    """
+def apply_dct_decoding(blocks: np.ndarray):
     original_shape = blocks.shape
     m, n, d, _ = original_shape
     blocks_vector = blocks.reshape((-1, d, d))
@@ -66,68 +56,14 @@ def decode_dct_stage(blocks: np.ndarray):
     return blocks_image
 
 
-def encode_until_dct(image: np.ndarray, d: int):
-    """
-    get an image and do the encode pipline till the dct
-    :param image: image matrix in uint
-    :param d: block size
-    :return:
-    """
+def encode_until_dct(image: np.ndarray, block_size: int):
     scale = scale_matrix(image)
-    blocks = bind_matrix(scale, d)
-    return encode_dct_stage(blocks)
+    blocks = bind_matrix(scale, block_size)
+    return apply_dct_encoding(blocks)
 
 
-def decode_until_dct(blocks: np.ndarray, resolution: int = 8):
-    """
-    get a dct matrix and decode to image
-    :param blocks: blocks of dtc matrices
-    :param resolution: the image resolution
-    :return:
-    """
-    blocks_image = decode_dct_stage(blocks)
+def decode_from_dct(blocks: np.ndarray, resolution: int = 8):
+    blocks_image = apply_dct_decoding(blocks)
     scaled_image = unbind_matrix(blocks_image)
     image = descale_matrix(scaled_image, k=resolution)
     return image
-
-# def until_dct_encoder(matrix, block_size):
-#     # Scale the matrix
-#     k = np.iinfo(matrix.dtype).bits
-#     scaled_matrix = scale_matrix(matrix, k)
-#
-#     # Perform blocking
-#     blocks = bind_matrix(scaled_matrix, block_size)
-#
-#     # Apply DCT on each block
-#     dct_coefficients = dct_2d(blocks)
-#
-#     return dct_coefficients
-#
-#
-# def until_dct_decoder(coefficients):
-#     # Reconstruct the image from the quantized coefficients
-#     reconstructed_blocks = idct_2d(coefficients)
-#     reconstructed_image = unbind_matrix(reconstructed_blocks)
-#
-#     # Rescale the reconstructed image
-#     # k = np.iinfo(coefficients.dtype).bits
-#     original_image = descale_matrix(reconstructed_image, 8)
-#
-#     return original_image.astype(np.uint8)
-
-
-def until_dct_test(matrix, block_size):
-    # Encode the image
-    encoded_coeffs = encode_until_dct(matrix, block_size)
-
-    # Decode the coefficients
-    reconstructed_image = decode_until_dct(encoded_coeffs).astype(np.uint8)
-
-    imageio.imsave("Plots/reconstructed_image.jpg", reconstructed_image)
-
-    # Compare the reconstructed image with the original image
-    mse = np.mean((matrix - reconstructed_image) ** 2)
-    if mse < 0.5:
-        print("The reconstructed picture is identical to the original.")
-    else:
-        print("The reconstructed picture is not identical to the original.")

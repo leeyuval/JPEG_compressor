@@ -12,22 +12,6 @@ def save_image(matrix, bmp_file_path):
 
 
 def bind_matrix(matrix, d):
-    """
-    Splits a matrix into sub-matrices of size d x d and stores them
-    in a block structure.
-
-    Parameters: matrix (numpy.ndarray): A 2-dimensional numpy ndarray
-    representing the matrix to be binned.
-    d (int): An integer representing the size of the sub-matrices.
-
-    Returns: numpy.ndarray: A 4-dimensional numpy ndarray representing the
-    block-structured matrix.
-
-    Raises:
-        ValueError: If the matrix size is not divisible by d.
-
-    """
-
     if d <= 0 or matrix.shape[0] % d != 0 or matrix.shape[1] % d != 0:
         raise ValueError("The matrix size is not divisible by d")
 
@@ -39,17 +23,6 @@ def bind_matrix(matrix, d):
 
 
 def unbind_matrix(blocks):
-    """
-    Reconstructs a matrix from a block structure.
-
-    Parameters: blocks (numpy.ndarray): A 4-dimensional numpy ndarray
-    representing the block-structured matrix.
-
-    Returns: numpy.ndarray: A 2-dimensional numpy ndarray representing the
-    reconstructed matrix.
-
-    """
-
     num_rows, num_cols, d, _ = blocks.shape
     matrix = blocks.swapaxes(1, 2).reshape(num_rows * d, num_cols * d)
 
@@ -57,52 +30,20 @@ def unbind_matrix(blocks):
 
 
 def scale_matrix(matrix, k=8):
-    """
-    Scales each element of a matrix from the range [0, 2^K - 1] to
-    the range [-1/2, 2^(K-1) - 1/2^K], where K is the resolution in bits.
-
-    Parameters:
-        matrix (numpy.ndarray): A 2-dimensional numpy ndarray representing the matrix
-            to be scaled.
-        k (int): An integer representing the resolution in bits.
-
-    Returns:
-        numpy.ndarray: A 2-dimensional numpy ndarray representing the scaled matrix.
-
-    """
+    k = np.iinfo(matrix.dtype).bits
     matrix = matrix.astype(float)
-    return (matrix - 2 ** (k - 1)) / 2 ** k
+    matrix = matrix / (2 ** k) - 0.5
+    return matrix
 
 
 def descale_matrix(matrix, k):
-    """
-    Descales each element of a matrix from the range [-1/2, 2^(K-1) - 1/2^K] to
-    the range [0, 2^K - 1], where K is the resolution in bits.
-
-    Parameters:
-        matrix (numpy.ndarray): A 2-dimensional numpy ndarray representing the scaled matrix
-            to be descaled.
-        k (int): An integer representing the resolution in bits.
-
-    Returns:
-        numpy.ndarray: A 2-dimensional numpy ndarray representing the descaled matrix.
-
-    """
-    matrix = (matrix * 2 ** k) + 2 ** (k - 1)
-    return np.rint(matrix).astype(np.uint8)
+    matrix[matrix < -0.5] = -0.5
+    matrix = (matrix + 0.5) * (2 ** k)
+    matrix = np.rint(matrix).astype(np.uint8)
+    return matrix
 
 
 def zigzag_order(matrix):
-    """
-    Converts an N × N block of reals to a vector in the zigzag order.
-
-    Args:
-    matrix: The input matrix.
-
-    Returns:
-    The zigzag vector.
-    """
-
     N, M = matrix.shape
     if N != M:
         raise ValueError("Input block is not a square matrix.")
@@ -113,11 +54,6 @@ def zigzag_order(matrix):
 
 
 def reverse_zigzag_order(vector: np.ndarray):
-    """
-    Reverses the zigzag ordering operation and reconstructs the original NxN matrix.
-    :param vector: Zigzag ordered vector.
-    :return: Reconstructed matrix.
-    """
     N = int(np.sqrt(len(vector)))
     matrix = np.zeros((N, N), dtype=vector.dtype)
 

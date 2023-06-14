@@ -1,4 +1,8 @@
+from io import BytesIO
+from PIL import Image
+
 import numpy as np
+from tqdm import tqdm
 
 from entropy_coder import *
 from quantizer import *
@@ -11,8 +15,9 @@ IMPROVED_VERSION = 1
 #############################################################
 
 
-def encode_image(image, block_size: int, delta: float, param: int, method: int, version: int = NORMAL_VERSION):
-    quantized_blocks = until_quantization_encoder(image, delta, block_size)
+def encode_image(image, block_size: int, delta: float, param: int, method: int,
+                 dpcm: bool = False, version: int = NORMAL_VERSION):
+    quantized_blocks = encode_until_quantization(image, delta, block_size, dpcm)
     encoded_string = encode_image(quantized_blocks, block_size, param, method, version)
     return encoded_string
 
@@ -40,15 +45,26 @@ def encode_block(block, block_size: int, param: int, method: int, version: int =
     return encoded_string
 
 
+def get_rate_and_psnr_jpeg(im_array, quality):
+    before_size_bytes = im_array.nbytes
+    buffer = BytesIO()
+    Image.fromarray(im_array).save(buffer, 'JPEG', quality=quality)
+    after_size_bytes = buffer.tell()
+    R = after_size_bytes / before_size_bytes
+    rec_image = np.asarray(Image.open(buffer))
+    psnr = calculate_psnr(rec_image, im_array)
+    return R, psnr
+
+
 #############################################################
 ######################## Decoder ############################
 #############################################################
 
 
 def decode_image(encoded_string: str, block_size: int, delta: float, param: int,
-                 shape: tuple, k: int, method: int, version: bool = NORMAL_VERSION):
+                 shape: tuple, method: int, dpcm: bool = False, version: bool = NORMAL_VERSION):
     blocks = decode_image_blocks(encoded_string, block_size, param, shape, method, version)
-    return until_quantization_decoder(blocks, delta)
+    return decode_from_quantization(blocks, delta, dpcm)
 
 
 def decode_image_blocks(encoded_string: str, block_size: int, param: int, shape: tuple,
@@ -105,3 +121,36 @@ def calculate_encoding_length(encoded_blocks, param, method=EXPONENTIAL_GOLOMB, 
     else:
         length += num_of_bits * encoded_blocks.shape[0] * encoded_blocks.shape[1]
     return length
+
+
+def calculate_best_length(blocks, version=NORMAL_VERSION):
+    k_values = list(range(1, 11))
+    m_values = list(range(1, 11))
+    best_length = np.inf
+    best_params = None
+    for k in k_values:
+        length = calculate_encoding_length(blocks, k, method=EXPONENTIAL_GOLOMB, version=version)
+        if length < best_length:
+            best_length = length
+            best_params = f'exponential-golomb: {k}'
+    for m in m_values:
+        length = calculate_encoding_length(blocks, m, method=GOLOMB_RICE, version=version)
+        if length < best_length:
+            best_length = length
+            best_params = f'golomb-rice: {m}'
+    return best_length, best_params
+
+
+def find_best_lengths(image, block_sizes, deltas, version=NORMAL_VERSION, dpcm=False):
+    len_results = np.zeros(shape=(len(block_sizes), len(deltas)))
+    psnr_results = np.zeros(shape=(len(block_sizes), len(deltas)))
+    params_results = [[None for _ in range(len(deltas))] for __ in range(len(block_sizes))]
+    for i, n in enumerate(block_sizes):
+        for j, delta in enumerate(tqdm(deltas)):
+            blocks = encode_until_quantization(image, delta, n, dpcm=dpcm)
+            length, params = calculate_best_length(blocks, version=version)
+            rec = decode_from_quantization(blocks, delta, dpcm=dpcm)
+            psnr_results[i, j] = calculate_psnr(image, rec)
+            len_results[i, j] = length
+            params_results[i][j] = params
+    return len_results, psnr_results, params_results

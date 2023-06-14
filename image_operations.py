@@ -33,7 +33,7 @@ def bind_matrix(matrix, d):
 
     num_rows = matrix.shape[0] // d
     num_cols = matrix.shape[1] // d
-    block_matrix = matrix.reshape(num_rows, num_cols, d, d)
+    block_matrix = matrix.reshape((num_rows, d, num_cols, d)).swapaxes(1, 2)
 
     return block_matrix
 
@@ -51,12 +51,12 @@ def unbind_matrix(blocks):
     """
 
     num_rows, num_cols, d, _ = blocks.shape
-    matrix = blocks.reshape(num_rows * d, num_cols * d)
+    matrix = blocks.swapaxes(1, 2).reshape(num_rows * d, num_cols * d)
 
     return matrix
 
 
-def scale_matrix(matrix, k):
+def scale_matrix(matrix, k=8):
     """
     Scales each element of a matrix from the range [0, 2^K - 1] to
     the range [-1/2, 2^(K-1) - 1/2^K], where K is the resolution in bits.
@@ -70,6 +70,7 @@ def scale_matrix(matrix, k):
         numpy.ndarray: A 2-dimensional numpy ndarray representing the scaled matrix.
 
     """
+    matrix = matrix.astype(float)
     return (matrix - 2 ** (k - 1)) / 2 ** k
 
 
@@ -87,10 +88,11 @@ def descale_matrix(matrix, k):
         numpy.ndarray: A 2-dimensional numpy ndarray representing the descaled matrix.
 
     """
-    return (matrix * 2 ** k) + 2 ** (k - 1)
+    matrix = (matrix * 2 ** k) + 2 ** (k - 1)
+    return np.rint(matrix).astype(np.uint8)
 
 
-def zigzag_order(block):
+def zigzag_order(matrix):
     """
     Converts an N × N block of reals to a vector in the zigzag order.
 
@@ -101,23 +103,38 @@ def zigzag_order(block):
     The zigzag vector.
     """
 
-    N, M = block.shape
+    N, M = matrix.shape
     if N != M:
         raise ValueError("Input block is not a square matrix.")
 
-    vector_length = N * N
-    vector = np.zeros(vector_length)
+    matrix = np.fliplr(matrix)
+    zigzag_vector = np.concatenate([matrix.diagonal(i)[::2 * (i % 2) - 1] for i in range(N - 1, -N, -1)])
+    return zigzag_vector
 
-    i = 0
-    for d in range(N + N - 1):
-        indices = list(range(max(0, d - N + 1), min(d, N - 1) + 1))
-        if d % 2 == 0:
-            indices.reverse()
-        for j in indices:
-            vector[i] = block[j, d - j]
-            i += 1
 
-    return vector
+def reverse_zigzag_order(vector: np.ndarray):
+    """
+    Reverses the zigzag ordering operation and reconstructs the original NxN matrix.
+    :param vector: Zigzag ordered vector.
+    :return: Reconstructed matrix.
+    """
+    N = int(np.sqrt(len(vector)))
+    matrix = np.zeros((N, N), dtype=vector.dtype)
+
+    zigzag_index = 0
+
+    for i in range(N - 1, -N, -1):
+        diagonal_length = N - abs(i)
+        vals = vector[zigzag_index:zigzag_index + diagonal_length]
+        zigzag_index += diagonal_length
+
+        start = 0 if i >= 0 else abs(i)
+        rng = np.arange(start, start + diagonal_length)
+        ind = rng + i + rng * N
+        matrix.flat[ind] = vals[::2 * (i % 2) - 1]
+
+    matrix = np.fliplr(matrix)
+    return matrix
 
 
 def calculate_psnr(X, Y):

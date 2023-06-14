@@ -30,9 +30,10 @@ def inverse_quantization(quantized_coefficients, delta):
 
 
 def until_quantization_encoder(matrix, delta, block_size):
-    after_dct = until_dct_encoder(matrix, block_size)
+    after_dct = encode_until_dct(matrix, block_size)
     return quantize(after_dct, delta)
 
 
 def until_quantization_decoder(quantized_matrix, delta):
-    return until_dct_decoder(inverse_quantization(quantized_matrix, delta))
+    return decode_until_dct(inverse_quantization(quantized_matrix, delta))
+

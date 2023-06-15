@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 from tqdm import tqdm
 
-from entropy_coder import *
+from entropy_encoder import *
 from quantizer import *
 
 NORMAL_VERSION = 0

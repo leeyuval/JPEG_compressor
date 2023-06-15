@@ -2,16 +2,42 @@ import imageio.v2 as imageio
 import numpy as np
 
 
-def load_image(bmp_file_path):
+def load_image(bmp_file_path: str) -> np.ndarray:
+    """
+    Load an image from a BMP file.
+
+    Args:
+        bmp_file_path: The path to the BMP file.
+
+    Returns:
+        The loaded image as a NumPy array.
+    """
     image = imageio.imread(bmp_file_path)
     return image
 
 
-def save_image(matrix, bmp_file_path):
+def save_image(matrix: np.ndarray, bmp_file_path: str) -> None:
+    """
+    Save a matrix as an image in BMP format.
+
+    Args:
+        matrix: The matrix to save as an image.
+        bmp_file_path: The path to save the BMP file.
+    """
     imageio.imsave(bmp_file_path, matrix)
 
 
-def bind_matrix(matrix, d):
+def bind_matrix(matrix: np.ndarray, d: int) -> np.ndarray:
+    """
+    Bind a matrix into a block matrix.
+
+    Args:
+        matrix: The matrix to bind.
+        d: The block size.
+
+    Returns:
+        The block matrix.
+    """
     if d <= 0 or matrix.shape[0] % d != 0 or matrix.shape[1] % d != 0:
         raise ValueError("The matrix size is not divisible by d")
 
@@ -22,28 +48,66 @@ def bind_matrix(matrix, d):
     return block_matrix
 
 
-def unbind_matrix(blocks):
+def unbind_matrix(blocks: np.ndarray) -> np.ndarray:
+    """
+    Unbind a block matrix into a matrix.
+
+    Args:
+        blocks: The block matrix.
+
+    Returns:
+        The unbound matrix.
+    """
     num_rows, num_cols, d, _ = blocks.shape
     matrix = blocks.swapaxes(1, 2).reshape(num_rows * d, num_cols * d)
 
     return matrix
 
 
-def scale_matrix(matrix, k=8):
+def scale_matrix(matrix: np.ndarray, k: int = 8) -> np.ndarray:
+    """
+    Scale a matrix to the range [-0.5, 0.5].
+
+    Args:
+        matrix: The matrix to scale.
+        k: The number of bits used to represent the values.
+
+    Returns:
+        The scaled matrix.
+    """
     k = np.iinfo(matrix.dtype).bits
     matrix = matrix.astype(float)
     matrix = matrix / (2 ** k) - 0.5
     return matrix
 
 
-def descale_matrix(matrix, k):
+def descale_matrix(matrix: np.ndarray, k: int) -> np.ndarray:
+    """
+    Descale a matrix from the range [-0.5, 0.5] to its original range.
+
+    Args:
+        matrix: The matrix to descale.
+        k: The number of bits used to represent the values.
+
+    Returns:
+        The descaled matrix.
+    """
     matrix[matrix < -0.5] = -0.5
     matrix = (matrix + 0.5) * (2 ** k)
     matrix = np.rint(matrix).astype(np.uint8)
     return matrix
 
 
-def zigzag_order(matrix):
+def zigzag_order(matrix: np.ndarray) -> np.ndarray:
+    """
+    Perform zigzag ordering on a square matrix.
+
+    Args:
+        matrix: The square matrix.
+
+    Returns:
+        The matrix elements in zigzag order as a 1D array.
+    """
     N, M = matrix.shape
     if N != M:
         raise ValueError("Input block is not a square matrix.")
@@ -53,7 +117,16 @@ def zigzag_order(matrix):
     return zigzag_vector
 
 
-def reverse_zigzag_order(vector: np.ndarray):
+def reverse_zigzag_order(vector: np.ndarray) -> np.ndarray:
+    """
+    Reverse the zigzag ordering to obtain a square matrix.
+
+    Args:
+        vector: The 1D array in zigzag order.
+
+    Returns:
+        The square matrix.
+    """
     N = int(np.sqrt(len(vector)))
     matrix = np.zeros((N, N), dtype=vector.dtype)
 

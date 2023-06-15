@@ -1,11 +1,16 @@
-from encoder import *
+from JPEG_compressor import *
 from quantizer import *
 
-def test_until_dct(matrix, block_size):
-    # Encode the image
-    encoded_coeffs = encode_until_dct(matrix, block_size)
 
-    # Decode the coefficients
+def test_until_dct(matrix: np.ndarray, block_size: int):
+    """
+    Test the encoding and decoding process until the DCT stage.
+
+    Args:
+        matrix: The matrix representing the image.
+        block_size: The block size for encoding.
+    """
+    encoded_coeffs = encode_until_dct(matrix, block_size)
     reconstructed_image = decode_from_dct(encoded_coeffs).astype(np.uint8)
 
     imageio.imsave("Plots/reconstructed_image.jpg", reconstructed_image)
@@ -18,12 +23,13 @@ def test_until_dct(matrix, block_size):
         print("The reconstructed picture is not identical to the original.")
 
 
-def test_entropy_stage(image):
+def test_entropy_stage(image: np.ndarray):
     """
-    Verify that the entropy encoding stage is reversible, i.e that the indices given to the encoder
+    Verify that the entropy encoding stage is reversible, i.e., the indices given to the encoder
     are returned by the decoder.
-    :param image: image to test.
-    :return:
+
+    Args:
+        image: The image to test.
     """
     d = 8
     delta = .2
@@ -34,7 +40,13 @@ def test_entropy_stage(image):
     assert (enc_blocks == dec_blocks).all()
 
 
-def test_length_calculation(image):
+def test_length_calculation(image: np.ndarray):
+    """
+    Test the calculation of encoding length.
+
+    Args:
+        image: The image to test.
+    """
     block_size = 8
     delta = 0.2
     k = 5
